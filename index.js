@@ -372,6 +372,39 @@ function stampUpdated() {
     $('updated').innerHTML = `<i class="fa-solid fa-circle-check"></i> Atualizado às ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} · atualiza a cada 10 min`;
 }
 
+/* tema reativo do card "Agora": cores de fundo + efeitos por condição */
+function themeNowCard(code, isDay) {
+    const card = $('nowCard');
+    if (!card) return;
+    let c1, c2, glow, fx;
+
+    const isSnow = (code >= 71 && code <= 77) || code === 85 || code === 86;
+
+    if (!isDay) {                                   /* ---------- noite ---------- */
+        if (code >= 95) { c1 = '#070a16'; c2 = '#1d2536'; glow = 'rgba(150,180,255,.40)'; fx = 'fx-storm'; }
+        else if (isSnow) { c1 = '#0a1526'; c2 = '#2a4460'; glow = 'rgba(205,230,255,.38)'; fx = 'fx-snow'; }
+        else if (code >= 61) { c1 = '#08122a'; c2 = '#1e3350'; glow = 'rgba(120,170,255,.35)'; fx = 'fx-rain'; }
+        else if (code >= 45) { c1 = '#0b1524'; c2 = '#2a3648'; glow = 'rgba(200,220,240,.28)'; fx = 'fx-fog'; }
+        else if (code >= 2) { c1 = '#071026'; c2 = '#1c2f4c'; glow = 'rgba(180,205,255,.28)'; fx = 'fx-cloud'; }
+        else { c1 = '#040c22'; c2 = '#16355c'; glow = 'rgba(255,220,140,.22)'; fx = 'fx-clear'; }
+    } else {                                        /* ---------- dia ---------- */
+        if (code >= 95) { c1 = '#141a26'; c2 = '#3a4459'; glow = 'rgba(170,190,255,.45)'; fx = 'fx-storm'; }
+        else if (isSnow) { c1 = '#2b4a66'; c2 = '#a9c9e0'; glow = 'rgba(240,250,255,.55)'; fx = 'fx-snow'; }
+        else if (code >= 61) { c1 = '#1f3a52'; c2 = '#486b8b'; glow = 'rgba(160,200,255,.42)'; fx = 'fx-rain'; }
+        else if (code >= 45) { c1 = '#414e5e'; c2 = '#8d99a6'; glow = 'rgba(255,255,255,.35)'; fx = 'fx-fog'; }
+        else if (code >= 2) { c1 = '#33587e'; c2 = '#8fb0c9'; glow = 'rgba(255,255,255,.30)'; fx = 'fx-cloud'; }
+        else if (code === 1) { c1 = '#1667c6'; c2 = '#63aeee'; glow = 'rgba(255,214,110,.55)'; fx = 'fx-clear'; }
+        else { c1 = '#0f5fbe'; c2 = '#7cc3f5'; glow = 'rgba(255,214,110,.60)'; fx = 'fx-clear'; }
+    }
+
+    card.style.setProperty('--c1', c1);
+    card.style.setProperty('--c2', c2);
+    card.style.setProperty('--glow', glow);
+    card.classList.remove('fx-clear', 'fx-cloud', 'fx-rain', 'fx-storm', 'fx-snow', 'fx-fog');
+    card.classList.add(fx);
+    card.classList.toggle('is-night', !isDay);
+}
+
 function renderNow() {
     const c = state.wx.current;
     const h = dayHourly(0);
@@ -379,21 +412,29 @@ function renderNow() {
     const info = weatherInfo(c.weather_code);
     const u = U();
 
-    $('nowIcon').className = `fa-solid ${info.icon}`;
+    const icon = $('nowIcon');
+    icon.className = `fa-solid ${info.icon}`;
+    const box = icon.parentElement;
+    box.classList.remove('pop');
+    void box.offsetWidth;            /* reinicia a animação */
+    box.classList.add('pop');
+
     $('nowTemp').textContent = `${r0(c.temperature_2m)}°`;
     $('nowDesc').textContent = info.label;
     $('nowPlace').textContent = state.place || '—';
     $('nowClock').textContent = `${c.time.slice(11, 16)} local`;
-    $('nowHum').textContent = `${c.relative_humidity_2m}% umidade`;
-    $('nowWind').textContent = `Vento ${r0(c.wind_speed_10m)} ${u.wind}`;
-    $('nowFeels').textContent = `Sensação ${r0(c.apparent_temperature)}°`;
+    $('nowHum').textContent = `${c.relative_humidity_2m}%`;
+    $('nowWind').textContent = `${r0(c.wind_speed_10m)} ${u.wind}`;
+    $('nowFeels').textContent = `${r0(c.apparent_temperature)}°`;
     $('nowPressure').textContent = `${r0(c.pressure_msl)} hPa`;
-    $('nowUv').textContent = `UV ${h.uv_index[hi] != null ? h.uv_index[hi].toFixed(1) : '—'} (${uvInfo(h.uv_index[hi] || 0)})`;
-    $('nowVis').textContent = `Visibilidade ${(h.visibility[hi] / (state.units === 'metric' ? 1000 : 1609.34)).toFixed(1)} ${u.dist}`;
-    $('nowCloud').textContent = `${c.cloud_cover}% nuvens`;
-    $('nowPrec').textContent = `${c.precipitation} ${u.rain} agora`;
-    $('nowGust').textContent = `Rajadas ${r0(c.wind_gusts_10m)} ${u.wind}`;
-    $('nowDir').textContent = `Direção ${COMPASS[Math.round(c.wind_direction_10m / 45) % 8]} (${c.wind_direction_10m}°)`;
+    $('nowUv').textContent = `${h.uv_index[hi] != null ? h.uv_index[hi].toFixed(1) : '—'} · ${uvInfo(h.uv_index[hi] || 0)}`;
+    $('nowVis').textContent = `${(h.visibility[hi] / (state.units === 'metric' ? 1000 : 1609.34)).toFixed(1)} ${u.dist}`;
+    $('nowCloud').textContent = `${c.cloud_cover}%`;
+    $('nowPrec').textContent = `${c.precipitation} ${u.rain}`;
+    $('nowGust').textContent = `${r0(c.wind_gusts_10m)} ${u.wind}`;
+    $('nowDir').textContent = `${COMPASS[Math.round(c.wind_direction_10m / 45) % 8]} (${c.wind_direction_10m}°)`;
+
+    themeNowCard(c.weather_code, !!c.is_day);
 }
 
 /* ---------------- medidores ---------------- */
@@ -1001,7 +1042,7 @@ renderFavs();
 applyScene();
 
 /* exposição para depuração */
-window.__dnc = { state, scene, globe, get charts() { return charts; } };
+window.__dnc = { state, scene, globe, themeNowCard, get charts() { return charts; } };
 
 /* demo inicial: preenche São Paulo para a cena já ter dados reais */
 (async () => {

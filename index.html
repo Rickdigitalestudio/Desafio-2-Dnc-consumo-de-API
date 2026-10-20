@@ -146,32 +146,41 @@
         <!-- RESULTADO: AGORA -->
         <section id="resultado" class="result hidden">
             <div class="now-grid">
-                <div class="now-card">
+                <div class="now-card" id="nowCard">
+                    <div class="now-fx" aria-hidden="true"><span class="fx-layer"></span></div>
+
+                    <div class="now-top">
+                        <span class="now-loc"><i class="fa-solid fa-location-dot"></i> <span id="nowPlace">—</span></span>
+                        <span class="now-time"><i class="fa-regular fa-clock"></i> <span id="nowClock">—</span></span>
+                    </div>
+
                     <div class="now-main">
-                        <i id="nowIcon" class="fa-solid fa-cloud-sun"></i>
-                        <div>
+                        <div class="now-icon"><i id="nowIcon" class="fa-solid fa-cloud-sun"></i></div>
+                        <div class="now-read">
                             <strong id="nowTemp">--°</strong>
                             <span id="nowDesc">—</span>
                         </div>
                     </div>
-                    <div class="now-meta">
-                        <div><i class="fa-solid fa-location-dot"></i><span id="nowPlace">—</span></div>
-                        <div><i class="fa-solid fa-clock"></i><span id="nowClock">—</span></div>
-                        <div><i class="fa-solid fa-droplet"></i><span id="nowHum">—</span></div>
-                        <div><i class="fa-solid fa-wind"></i><span id="nowWind">—</span></div>
-                        <div><i class="fa-solid fa-temperature-half"></i><span id="nowFeels">—</span></div>
-                        <div><i class="fa-solid fa-gauge-high"></i><span id="nowPressure">—</span></div>
-                        <div><i class="fa-solid fa-sun"></i><span id="nowUv">—</span></div>
-                        <div><i class="fa-solid fa-eye"></i><span id="nowVis">—</span></div>
-                        <div><i class="fa-solid fa-cloud"></i><span id="nowCloud">—</span></div>
-                        <div><i class="fa-solid fa-cloud-rain"></i><span id="nowPrec">—</span></div>
-                        <div><i class="fa-solid fa-wind"></i><span id="nowGust">—</span></div>
-                        <div><i class="fa-solid fa-compass"></i><span id="nowDir">—</span></div>
+
+                    <div class="now-chips">
+                        <div class="cd"><i class="fa-solid fa-temperature-half"></i><span><small>Sensação</small><strong id="nowFeels">—</strong></span></div>
+                        <div class="cd"><i class="fa-solid fa-droplet"></i><span><small>Umidade</small><strong id="nowHum">—</strong></span></div>
+                        <div class="cd"><i class="fa-solid fa-wind"></i><span><small>Vento</small><strong id="nowWind">—</strong></span></div>
+                        <div class="cd"><i class="fa-solid fa-wind"></i><span><small>Rajadas</small><strong id="nowGust">—</strong></span></div>
+                        <div class="cd"><i class="fa-solid fa-compass"></i><span><small>Direção</small><strong id="nowDir">—</strong></span></div>
+                        <div class="cd"><i class="fa-solid fa-gauge-high"></i><span><small>Pressão</small><strong id="nowPressure">—</strong></span></div>
+                        <div class="cd"><i class="fa-solid fa-sun"></i><span><small>Índice UV</small><strong id="nowUv">—</strong></span></div>
+                        <div class="cd"><i class="fa-solid fa-eye"></i><span><small>Visibilidade</small><strong id="nowVis">—</strong></span></div>
+                        <div class="cd"><i class="fa-solid fa-cloud"></i><span><small>Nuvens</small><strong id="nowCloud">—</strong></span></div>
+                        <div class="cd"><i class="fa-solid fa-cloud-rain"></i><span><small>Chuva agora</small><strong id="nowPrec">—</strong></span></div>
                     </div>
+
                     <div class="now-foot">
                         <span id="updated" class="updated">—</span>
-                        <button type="button" class="mini-btn" id="btnFav"><i class="fa-regular fa-star"></i> Salvar local</button>
-                        <button type="button" class="mini-btn" id="btnRefresh"><i class="fa-solid fa-arrows-rotate"></i> Atualizar</button>
+                        <div class="now-actions">
+                            <button type="button" class="mini-btn" id="btnFav"><i class="fa-regular fa-star"></i> Salvar local</button>
+                            <button type="button" class="mini-btn" id="btnRefresh"><i class="fa-solid fa-arrows-rotate"></i> Atualizar</button>
+                        </div>
                     </div>
                 </div>
 
