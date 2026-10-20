@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DncWeather 3D · Estação Meteorológica Interativa — Previsão, Cena 3D e CEP</title>
+    <meta name="description" content="DncWeather 3D: estação meteorológica interativa com cena 3D em tempo real, previsão de 7 dias, gráficos de umidade, chuva e vento, qualidade do ar e busca por CEP ou cidade. Open-Meteo + ViaCEP.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- Three.js (cena 3D) -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <!-- FUNDO ANIMADO -->
+    <div class="sky" aria-hidden="true">
+        <span class="sun"></span>
+        <span class="cloud c1"></span>
+        <span class="cloud c2"></span>
+        <span class="cloud c3"></span>
+    </div>
+
+    <!-- CABEÇALHO -->
+    <header class="topbar">
+        <div class="wrap nav">
+            <a class="brand" href="#"><i class="fa-solid fa-cloud-sun"></i> Dnc<strong>Weather 3D</strong></a>
+            <button class="burger" id="burger" type="button" aria-label="Abrir menu" aria-expanded="false">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <nav id="mainNav">
+                <a href="#buscar">Buscar</a>
+                <a href="#cena3d">Cena 3D</a>
+                <a href="#resultado">Agora</a>
+                <a href="#semana">7 dias</a>
+                <a href="#graficos">Gráficos</a>
+                <a href="#alertas">Alertas</a>
+            </nav>
+            <div class="unit-toggle" role="group" aria-label="Unidade de medida">
+                <button type="button" id="unitC" class="unit active" aria-pressed="true">°C</button>
+                <button type="button" id="unitF" class="unit" aria-pressed="false">°F</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="wrap">
+        <!-- HERO + BUSCA -->
+        <section class="hero" id="buscar">
+            <span class="eyebrow"><i class="fa-solid fa-satellite-dish"></i> Open-Meteo · ViaCEP · cena 3D em tempo real</span>
+            <h1>O clima em 3D.<br>Previsão de verdade.</h1>
+            <p>Busque por CEP, cidade ou use sua localização: cena 3D interativa da região, umidade do ar, % de chuva, vento, UV, qualidade do ar e gráficos da semana inteira.</p>
+
+            <div class="search-card">
+                <div class="tabs" role="tablist">
+                    <button type="button" class="tab active" id="tabCep" role="tab" aria-selected="true">CEP + coordenadas</button>
+                    <button type="button" class="tab" id="tabCidade" role="tab" aria-selected="false">Cidade</button>
+                </div>
+
+                <div class="tab-panel" id="panelCep">
+                    <div class="field">
+                        <label for="cep">CEP</label>
+                        <input type="text" id="cep" inputmode="numeric" placeholder="00000-000" maxlength="9" autocomplete="postal-code">
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label for="lat">Latitude</label>
+                            <input type="text" id="lat" inputmode="decimal" placeholder="-23.55">
+                        </div>
+                        <div class="field">
+                            <label for="long">Longitude</label>
+                            <input type="text" id="long" inputmode="decimal" placeholder="-46.63">
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn-primary" id="btnBuscar"><i class="fa-solid fa-magnifying-glass"></i> <span>Buscar previsão</span></button>
+                        <button class="btn-ghost" id="btnGeo" type="button"><i class="fa-solid fa-location-crosshairs"></i> Usar minha localização</button>
+                    </div>
+                </div>
+
+                <div class="tab-panel hidden" id="panelCidade">
+                    <div class="field">
+                        <label for="cidade">Cidade</label>
+                        <input type="text" id="cidade" placeholder="Ex.: Recife, Curitiba, Salvador..." autocomplete="address-level2">
+                    </div>
+                    <div class="actions">
+                        <button class="btn-primary" id="btnCidade" type="button"><i class="fa-solid fa-city"></i> <span>Buscar cidade</span></button>
+                    </div>
+                    <div class="city-list" id="cityList" aria-live="polite"></div>
+                </div>
+
+                <p class="error" id="formError" role="alert"></p>
+
+                <div class="fav-row">
+                    <span class="fav-label"><i class="fa-solid fa-star"></i> Favoritos</span>
+                    <div class="fav-list" id="favList"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CENA 3D -->
+        <section id="cena3d" class="scene-sec">
+            <div class="scene-head">
+                <h2><i class="fa-solid fa-cube"></i> Estação meteorológica 3D</h2>
+                <div class="scene-tools">
+                    <span class="scene-tag" id="sceneTag"><i class="fa-solid fa-satellite"></i> Demonstração</span>
+                    <button type="button" id="btnRotate" class="mini-btn"><i class="fa-solid fa-rotate"></i> Giro: ligado</button>
+                    <button type="button" id="btnResetCam" class="mini-btn"><i class="fa-solid fa-crosshairs"></i> Câmera</button>
+                </div>
+            </div>
+
+            <div class="scene-modes" id="sceneModes" aria-label="Modos visuais da cena">
+                <button type="button" class="mode active" data-code="auto">Condição real</button>
+                <button type="button" class="mode" data-code="0">Sol</button>
+                <button type="button" class="mode" data-code="2">Nuvens</button>
+                <button type="button" class="mode" data-code="63">Chuva</button>
+                <button type="button" class="mode" data-code="71">Neve</button>
+                <button type="button" class="mode" data-code="48">Névoa</button>
+                <button type="button" class="mode" data-code="95">Tempestade</button>
+            </div>
+
+            <div class="scene-box">
+                <canvas id="wxCanvas"></canvas>
+                <div class="scene-hud">
+                    <div class="hud-item"><span>Condição</span><strong id="hudCond">Céu limpo</strong></div>
+                    <div class="hud-item"><span>Vento</span><strong id="hudWind">8 km/h</strong></div>
+                    <div class="hud-item"><span>Umidade</span><strong id="hudHum">60%</strong></div>
+                    <div class="hud-item"><span>Nuvens</span><strong id="hudCloud">20%</strong></div>
+                </div>
+                <p class="hud-hint"><i class="fa-solid fa-hand-pointer"></i> Arraste para girar · scroll para aproximar</p>
+            </div>
+            <p class="scene-note" id="sceneNote">A cena é montada em tempo real com os dados da Open-Meteo: chuva, neve, névoa, relâmpagos, nuvens, sol/lua e vento mudam conforme a região.</p>
+        </section>
+
+        <!-- RESULTADO: AGORA -->
+        <section id="resultado" class="result hidden">
+            <div class="now-grid">
+                <div class="now-card">
+                    <div class="now-main">
+                        <i id="nowIcon" class="fa-solid fa-cloud-sun"></i>
+                        <div>
+                            <strong id="nowTemp">--°</strong>
+                            <span id="nowDesc">—</span>
+                        </div>
+                    </div>
+                    <div class="now-meta">
+                        <div><i class="fa-solid fa-location-dot"></i><span id="nowPlace">—</span></div>
+                        <div><i class="fa-solid fa-clock"></i><span id="nowClock">—</span></div>
+                        <div><i class="fa-solid fa-droplet"></i><span id="nowHum">—</span></div>
+                        <div><i class="fa-solid fa-wind"></i><span id="nowWind">—</span></div>
+                        <div><i class="fa-solid fa-temperature-half"></i><span id="nowFeels">—</span></div>
+                        <div><i class="fa-solid fa-gauge-high"></i><span id="nowPressure">—</span></div>
+                        <div><i class="fa-solid fa-sun"></i><span id="nowUv">—</span></div>
+                        <div><i class="fa-solid fa-eye"></i><span id="nowVis">—</span></div>
+                        <div><i class="fa-solid fa-cloud"></i><span id="nowCloud">—</span></div>
+                        <div><i class="fa-solid fa-cloud-rain"></i><span id="nowPrec">—</span></div>
+                        <div><i class="fa-solid fa-wind"></i><span id="nowGust">—</span></div>
+                        <div><i class="fa-solid fa-compass"></i><span id="nowDir">—</span></div>
+                    </div>
+                    <div class="now-foot">
+                        <span id="updated" class="updated">—</span>
+                        <button type="button" class="mini-btn" id="btnFav"><i class="fa-regular fa-star"></i> Salvar local</button>
+                        <button type="button" class="mini-btn" id="btnRefresh"><i class="fa-solid fa-arrows-rotate"></i> Atualizar</button>
+                    </div>
+                </div>
+
+                <aside class="globe-card">
+                    <canvas id="globeCanvas" aria-label="Globo 3D com a localização pesquisada"></canvas>
+                    <div class="globe-info">
+                        <div><span>Local</span><strong id="gPlace">—</strong></div>
+                        <div><span>Coordenadas</span><strong id="gCoords">—</strong></div>
+                        <div><span>Fuso</span><strong id="gTz">—</strong></div>
+                        <div><span>Elevação</span><strong id="gElev">—</strong></div>
+                    </div>
+                </aside>
+            </div>
+
+            <!-- MEDIDORES -->
+            <div class="gauges" id="gauges">
+                <div class="gauge-card">
+                    <div class="gauge-wrap">
+                        <svg viewBox="0 0 120 120" aria-hidden="true">
+                            <circle class="g-track" cx="60" cy="60" r="52"></circle>
+                            <circle class="g-val hum" id="gHumArc" cx="60" cy="60" r="52"></circle>
+                        </svg>
+                        <div class="g-center"><strong id="gHumNum">--</strong><span>umidade</span></div>
+                    </div>
+                    <p>Umidade do ar <b id="gHumSub">—</b></p>
+                </div>
+                <div class="gauge-card">
+                    <div class="gauge-wrap">
+                        <svg viewBox="0 0 120 120" aria-hidden="true">
+                            <circle class="g-track" cx="60" cy="60" r="52"></circle>
+                            <circle class="g-val rain" id="gRainArc" cx="60" cy="60" r="52"></circle>
+                        </svg>
+                        <div class="g-center"><strong id="gRainNum">--</strong><span>chuva</span></div>
+                    </div>
+                    <p>Probabilidade de chuva <b id="gRainSub">—</b></p>
+                </div>
+                <div class="gauge-card">
+                    <div class="gauge-wrap">
+                        <svg viewBox="0 0 120 120" aria-hidden="true">
+                            <circle class="g-track" cx="60" cy="60" r="52"></circle>
+                            <circle class="g-val uv" id="gUvArc" cx="60" cy="60" r="52"></circle>
+                        </svg>
+                        <div class="g-center"><strong id="gUvNum">--</strong><span>UV</span></div>
+                    </div>
+                    <p>Índice UV <b id="gUvSub">—</b></p>
+                </div>
+                <div class="gauge-card">
+                    <div class="gauge-wrap">
+                        <svg viewBox="0 0 120 120" aria-hidden="true">
+                            <circle class="g-track" cx="60" cy="60" r="52"></circle>
+                            <circle class="g-val wind" id="gWindArc" cx="60" cy="60" r="52"></circle>
+                        </svg>
+                        <div class="g-center"><strong id="gWindNum">--</strong><span>vento</span></div>
+                    </div>
+                    <p>Vento <b id="gWindSub">—</b></p>
+                </div>
+            </div>
+
+            <!-- QUALIDADE DO AR -->
+            <div class="air-card" id="airCard">
+                <div class="air-head">
+                    <h3><i class="fa-solid fa-lungs"></i> Qualidade do ar</h3>
+                    <span class="air-badge" id="aqiLabel">—</span>
+                </div>
+                <div class="air-bar"><span id="aqiBar"></span></div>
+                <div class="air-grid">
+                    <div><small>Índice (EAQI)</small><strong id="aqiVal">—</strong></div>
+                    <div><small>PM2.5</small><strong id="pm25">—</strong></div>
+                    <div><small>PM10</small><strong id="pm10">—</strong></div>
+                    <div><small>Ozônio</small><strong id="ozone">—</strong></div>
+                </div>
+            </div>
+
+            <!-- ANÁLISE -->
+            <div class="analysis">
+                <h3><i class="fa-solid fa-brain"></i> Análise do dia</h3>
+                <p id="analysisText">Busque uma localização para gerar a análise.</p>
+                <div class="chips" id="adviceChips"></div>
+            </div>
+
+            <!-- 7 DIAS -->
+            <h2 id="semana"><i class="fa-solid fa-calendar-days"></i> Próximos 7 dias <small>clique em um dia para explorar a cena e os gráficos</small></h2>
+            <div class="week" id="week"></div>
+
+            <!-- DETALHE DO DIA -->
+            <div class="detail" id="dayDetail">
+                <div class="detail-head">
+                    <h3 id="dTitle">—</h3>
+                    <button type="button" class="mini-btn" id="btnBackNow"><i class="fa-solid fa-clock-rotate-left"></i> Voltar ao agora</button>
+                </div>
+                <div class="detail-grid">
+                    <div><small><i class="fa-solid fa-sun"></i> Nascer do sol</small><strong id="dSunrise">—</strong></div>
+                    <div><small><i class="fa-solid fa-moon"></i> Pôr do sol</small><strong id="dSunset">—</strong></div>
+                    <div><small><i class="fa-solid fa-sun-plant-wilt"></i> UV máx.</small><strong id="dUv">—</strong></div>
+                    <div><small><i class="fa-solid fa-cloud-rain"></i> Chuva do dia</small><strong id="dRain">—</strong></div>
+                    <div><small><i class="fa-solid fa-wind"></i> Vento máx.</small><strong id="dWind">—</strong></div>
+                    <div><small><i class="fa-solid fa-droplet"></i> Umidade média</small><strong id="dHum">—</strong></div>
+                    <div><small><i class="fa-solid fa-moon"></i> Fase da lua</small><strong id="dMoon">—</strong></div>
+                    <div><small><i class="fa-solid fa-cloud"></i> Nuvens</small><strong id="dCloud">—</strong></div>
+                </div>
+
+                <div class="chart-card wide">
+                    <h4 id="ch24title">Próximas 24 horas · temperatura e % de chuva</h4>
+                    <div class="chart-box"><canvas id="ch24"></canvas></div>
+                </div>
+            </div>
+
+            <!-- GRÁFICOS -->
+            <h2 id="graficos"><i class="fa-solid fa-chart-line"></i> Gráficos da semana</h2>
+            <div class="charts">
+                <div class="chart-card">
+                    <h4>Temperatura máxima e mínima</h4>
+                    <div class="chart-box"><canvas id="chTemp"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <h4>Umidade do ar % × Probabilidade de chuva %</h4>
+                    <div class="chart-box"><canvas id="chHum"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <h4>Chuva (mm) × Vento máximo</h4>
+                    <div class="chart-box"><canvas id="chRain"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <h4>UV e temperatura média</h4>
+                    <div class="chart-box"><canvas id="chUv"></canvas></div>
+                </div>
+            </div>
+
+            <!-- ENDEREÇO -->
+            <h2><i class="fa-solid fa-map-location-dot"></i> Endereço e geodados</h2>
+            <div class="addr-card">
+                <div><small>Logradouro</small><strong id="rua">—</strong></div>
+                <div><small>Bairro</small><strong id="bairro">—</strong></div>
+                <div><small>Cidade / UF</small><strong id="estado">—</strong></div>
+                <div><small>Latitude</small><strong id="geoLat">—</strong></div>
+                <div><small>Longitude</small><strong id="geoLon">—</strong></div>
+                <div><small>Elevação</small><strong id="geoElev">—</strong></div>
+                <div><small>Fuso horário</small><strong id="geoTz">—</strong></div>
+                <div><small>CEP</small><strong id="geoCep">—</strong></div>
+                <div><small>Fonte dos dados</small><strong id="geoSrc">Open-Meteo + ViaCEP</strong></div>
+            </div>
+        </section>
+
+        <!-- ALERTAS -->
+        <section class="alerts" id="alertas">
+            <div>
+                <h2>Receba alertas do tempo no e-mail</h2>
+                <p>Chuva forte, UV alto e tempestade na sua região. Sem spam.</p>
+            </div>
+            <form action="https://api.sheetmonkey.io/form/2CdpAAb5EhfVm7wcZTZCov" method="post" target="dummyframe" id="leadForm">
+                <iframe name="dummyframe" title="envio" style="display:none"></iframe>
+                <input type="text" name="Name" placeholder="Seu nome" required autocomplete="name" aria-label="Nome">
+                <input type="email" name="Email" placeholder="Seu e-mail" required autocomplete="email" aria-label="E-mail">
+                <button type="submit">Quero receber</button>
+            </form>
+            <p class="ok" id="leadOk" role="status"></p>
+        </section>
+    </main>
+
+    <footer>
+        <div class="wrap foot">
+            <span><i class="fa-solid fa-cloud-sun"></i> DncWeather 3D · consumo de APIs + WebGL</span>
+            <span>Dados: Open-Meteo · ViaCEP · Feito por Henrique Luiz Dutra</span>
+        </div>
+    </footer>
+
+    <script type="module" src="index.js"></script>
+</body>
+</html>
